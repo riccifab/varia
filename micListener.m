@@ -5,7 +5,7 @@
 
 %%
 
-uMic = udp('0.0.0.0', 1111, 'LocalPort', 1004);
+uMic = udp('0.0.0.0', 1111, 'LocalPort', 1001);
 set(uMic, 'DatagramReceivedFcn', @micUDPCallback);
 % set(u, 'DatagramReceivedFcn', 'start(t);');
 fopen(uMic);

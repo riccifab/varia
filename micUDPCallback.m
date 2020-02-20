@@ -5,7 +5,7 @@ function micUDPCallback(src, event)
 % u.RemotePort=u.DatagramPort;
 % disp('now reading data');
 
-persistent file2save ar
+persistent file2save ar fileOnServer
 
 
 t = now;
@@ -20,6 +20,7 @@ info=dat.mpepMessageParse(str);
 
 % update remote IP to that of the sender
 src.RemoteHost = ip;
+src.RemotePort = port;
 
 switch info.instruction
     case 'hello'
@@ -28,6 +29,8 @@ switch info.instruction
         % configure save filename and path
         [filePath, fileStem] = dat.expPath(info.expRef, 'main', 'local');
         file2save = fullfile(filePath, [fileStem, '_mic.mat']);
+        [filePath, fileStem] = dat.expPath(info.expRef, 'main', 'master');
+        fileOnServer = fullfile(filePath, [fileStem, '_mic.mat']);
         adi = audiodevinfo;
 
         % Find the ID of the correct input
@@ -38,7 +41,7 @@ switch info.instruction
 %             {adi.input.Name});
         
         % define the audiorecorder object
-        Fs = 200e3;
+        Fs = 192e3;
         nBits = 16;
         nChannels = 1;
         ar = audiorecorder(Fs, nBits, nChannels, adi.input(iDevice).ID);
@@ -62,7 +65,17 @@ switch info.instruction
         if ~exist(folder, 'dir')
             mkdir(folder);
         end
+        fprintf('Saving data to disk..');
         save(file2save, 'micData', 'Fs', 'nBits');
+        fprintf('.done\n');
+        fprintf('Copying data to server..');
+        [status, message] = copyfile(file2save, fileOnServer);
+        fprintf('.done\n');
+        if ~status
+            warning('Copying the server failed with the following message:');
+            warning(sprintf('%s', message));
+        end
+        
 
         fwrite(src, data);
     case 'BlockStart'
